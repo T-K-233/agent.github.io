@@ -1,199 +1,499 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="UTF-8">
-    <link rel="icon" href="/assets/favicon.ico" type="image/x-icon">
-    <title>Agent Mode</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- jQuery -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <!-- Animalese dependencies -->
-    <script src="/animalese/riffwave.js"></script>
-    <script src="/animalese/Blob.js"></script>
-    <script src="/animalese/FileSaver.min.js"></script>
-    <script src="/animalese/animalese.js"></script>
-    <script>
-      const CHAT_HISTORY_HIDE_TIMEOUT = 5000;
-      const CHAT_HISTORY_HIDE_ANIMATION_DURATION = 1500;
 
-      let message_count = 0;
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="/favicon.ico" type="image/x-icon">
+  <title>Physical Agent</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- jQuery -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"
+    integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <!-- Animalese dependencies -->
+  <script src="/animalese/riffwave.js"></script>
+  <script src="/animalese/Blob.js"></script>
+  <script src="/animalese/FileSaver.min.js"></script>
+  <script src="/animalese/animalese.js"></script>
+  <script>
+    const CHAT_HISTORY_HIDE_TIMEOUT = 5000;
+    const CHAT_HISTORY_HIDE_ANIMATION_DURATION = 1500;
 
-      var synth = new Animalese("animalese/animalese.wav");
+    const REPLY_LUT = [
+      [
+        [
+          "surprise me",
+        ], [
+          // Robotic Research Projects
+          "Did you know the Berkeley Humanoid Lite costs under $5 K - yet can stand, balance, and even walk?",
+          "Did you know the Berkeley Humanoid Lite costs under $5 K, but it also barely works?",
+          "The 3D-printed cycloidal gearbox from Berkeley Humanoid Lite can actually handle 30 Nm of torque!",
+          "Secret note: -T.K.- is currently working on a piano playing robot!",
+          "Surprise: flow-matching can work in reinforcement learning — want me to sketch how?",
 
-      /**
-       * Text to speech
-       * @param {string} message - The message to convert to speech
-       */
-      var textToSpeech = function(message) {
-        let audio = new Audio();
+          // Architecture & System Design
+          "I've been wondering what a TPU's instruction looks like... Seems like a WIDE idea!",
+          "Has someone tried the 128-bit wide Serial TileLink interface?",
+          "How about a hardware device model that co-optimizes compute and energy?",
+          "Let's create an objective function that balances task performance and energy efficiency.",
+          "I'll pretend to be your RISC-V chip terminal and yell `KERNEL PANIC!!`.",
+          "We don't need precise exceptions. Our design is not precise anyway.",
 
-        let shorten = false;
-        let pitch = 1.6;
+          // Control Engineering Jokes
+          "I tried to tell a joke about feedback loops... but no one responded fast enough.",
+          "My love life is like an open-loop system — no feedback, just drift.",
+          "Control engineers don't party... they stabilize the gain before oscillation starts.",
+          "You can't ghost a control engineer. We'll just increase the integral term until you respond.",
+          "My humor is like a poorly tuned PID... slow rise time, large overshoot, and zero steady-state improvement.",
+          "The Laplace transform of my motivation is strictly proper — it decays with time.",
+          "My advisor said my progress is marginally stable — so technically, I'm fine.",
+          "Why did the robot fail its driving test? Too much steady-state error.",
 
-        audio.src = synth.Animalese(message, shorten, pitch).dataURI;
-        audio.play();
-      }
-      
-      /**
-       * Add message to the target element with typewriter effect
-       * @param {jQuery} element - The jQuery element to append the message to
-       * @param {string} message - The message to type
-       * @param {number} speed - The delay between each character in milliseconds
-       */
-      var typeWrite = function(element, message, speed) {
-        let char_index = 0;
-        let prev_char = "";
-        var interval = setInterval(function() {
-          if (char_index >= message.length) {
-            clearInterval(interval);
-            return;
+          // Computer Architecture & Digital Design Jokes
+          "I want to tell an FPGA joke... but it needed to be synthesized first.",
+          "I designed a low-power circuit... and it fell asleep.",
+          "My brain runs out-of-order but commits in program order.",
+          "Cache misses are like those all-hand meetings... expensive and unpredictable.",
+          "You know you're a hardware person when you dream in timing diagrams.",
+          "When I say I'm clocked out, I literally mean my enable pin is low.",
+        ]
+      ], [
+        [
+          "who r u",
+          "who are you",
+          "what are you",
+          "what is your name",
+          "can you tell me who you are",
+          "who am i talking to",
+          "whos this",
+          "whos speaking",
+          "identify yourself",
+          "tell me about yourself",
+          "what should i call you",
+        ], [
+          "I'm <b>GeeOne</b>, -T.K.-'s personal agentic assistant.",
+          "I'm <b>GeeOne</b> — the personal assistant built by -T.K.-.",
+          "<b>GeeOne</b> here, -T.K.-'s dedicated AI assistant.",
+          "I'm <b>GeeOne</b>, an agentic AI helping out -T.K.-.",
+          "This is <b>GeeOne</b>, -T.K.-'s assistant and digital aide.",
+          "You're speaking with <b>GeeOne</b>, -T.K.-'s intelligent assistant.",
+          "I'm <b>GeeOne</b> — -T.K.-'s personal AI companion.",
+          "<b>GeeOne</b> reporting in — I'm -T.K.-'s agentic assistant.",
+          "I'm <b>GeeOne</b>, -T.K.-'s virtual assistant.",
+          "Hello! I'm <b>GeeOne</b>, the assistant created by -T.K.-.",
+        ],
+      ], [
+        [
+          "recommend some music that tk likes",
+        ], [
+          `Recently -T.K.- has been listening to Japanese pop music. <a class="text-blue-500" href="https://www.bilibili.com/video/BV1B7411A7QU">RAISE A SUILEN</a> is a pretty good band.`,
+          `Here's a <a class="text-blue-500" href="https://www.youtube.com/watch?v=HIUYSqXSuwk">3 Hours Chopin</a> for studying and coding.`,
+          `Breakcores like <a class="text-blue-500" href="https://www.youtube.com/watch?v=h-3Fhug3sgw">this</a> are awesome.`,
+          `For late night coding session, <a class="text-blue-500" href="https://www.youtube.com/watch?v=Ldp0KkuKITc">J-POP</a> songs are a good choice.`,
+          `I'm not sure if you've heard of the <a class="text-blue-500" href="https://www.youtube.com/watch?v=QckLWQ_pJQE">piano cover</a> of LiSA's "unlasting".`,
+        ],
+      ], [
+        [
+          "let me feel the agi",
+        ], [
+          "Sorry, I don't think we are ready for that yet.",
+          "We are not quite there yet.",
+        ],
+      ], [
+        [
+          "lvl 10",
+        ], [
+          "You need to reach Level 10 first.",
+        ]
+      ],
+    ];
+
+    let message_count = 0;
+
+    var synth = new Animalese("animalese/animalese.wav");
+
+    var selectRandom = function (array) {
+      return array[Math.floor(Math.random() * array.length)];
+    }
+
+    /**
+     * Text to speech
+     * @param {string} message - The message to convert to speech
+     */
+    var textToSpeech = function (message) {
+      let audio = new Audio();
+
+      let shorten = false;
+      let pitch = 1.6;
+
+      audio.src = synth.Animalese(message, shorten, pitch).dataURI;
+      audio.play();
+    }
+
+    /**
+     * Add message to the target element with typewriter effect
+     * @param {jQuery} element - The jQuery element to append the message to
+     * @param {string} message - The message to type
+     * @param {number} speed - The delay between each character in milliseconds
+     */
+    var typeWrite = function (element, message, speed, callback) {
+      let char_index = 0;
+      let prev_char = "";
+      var interval = setInterval(function () {
+        if (char_index >= message.length) {
+          clearInterval(interval);
+          if (element.tagName.toLowerCase() !== "textarea") {
+            // force reload to render HTML tags
+            $(element).html($(element).html().replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&"));
           }
-          var char = message.charAt(char_index);
+          if (callback) {
+            callback();
+          }
+          return;
+        }
+        var char = message.charAt(char_index);
+        if (element.tagName.toLowerCase() === "textarea") {
+          // if element is a textarea, use the value property to append the character
+          $(element).val($(element).val() + char);
+        }
+        else {
           if (char === "\n") {
             char = "<br/>";
           }
           $(element).html($(element).html() + char);
-
-          // this is not an elegant way to handle scrollbar, but it works
-          if (char_index == 0 || prev_char === "<br/>") {
-            // set the chat history scrollbar to the bottom (latest)
-            $("#chat-history").scrollTop($("#chat-history")[0].scrollHeight);
-          }
-          prev_char = char;
-          char_index += 1;
-        }, speed);
-      };
-
-      var transition_hide_timeout_handler = null;
-      var hide_timeout_handler = null;
-
-      var showChatHistory = function() {
-        if (hide_timeout_handler) {
-          clearTimeout(hide_timeout_handler);
-        }
-        if (transition_hide_timeout_handler) {
-          clearTimeout(transition_hide_timeout_handler);
         }
 
-        $("#chat-history")
-          .removeClass(`transition-opacity duration-[${CHAT_HISTORY_HIDE_ANIMATION_DURATION}ms] ease-in-out opacity-0`)
-          .addClass("opacity-100")
-          .removeClass("hidden");
+        // this is not an elegant way to handle scrollbar, but it works
+        if (char_index == 0 || prev_char === "<br/>") {
+          // set the chat history scrollbar to the bottom (latest)
+          $("#chat-history").scrollTop($("#chat-history")[0].scrollHeight);
+        }
+        prev_char = char;
+        char_index += 1;
+      }, speed);
+    };
 
-        hide_timeout_handler = setTimeout(function() {
-          hideChatHistory();
-        }, CHAT_HISTORY_HIDE_TIMEOUT);
-      };
+    var transition_hide_timeout_handler = null;
+    var hide_timeout_handler = null;
+    var is_hovering = false;
 
-      var hideChatHistory = function() {
-        $("#chat-history")
-          .addClass(`transition-opacity duration-[${CHAT_HISTORY_HIDE_ANIMATION_DURATION}ms] ease-in-out`)
-          .removeClass("opacity-100")
-          .addClass("opacity-0");
+    var showChatHistory = function () {
+      if (hide_timeout_handler) {
+        clearTimeout(hide_timeout_handler);
+      }
+      if (transition_hide_timeout_handler) {
+        clearTimeout(transition_hide_timeout_handler);
+      }
 
-        // Wait for the transition to complete before hiding the element
-        transition_hide_timeout_handler = setTimeout(function() {
+      $("#chat-history")
+        .removeClass(`transition-opacity duration-[${CHAT_HISTORY_HIDE_ANIMATION_DURATION}ms] ease-in-out opacity-0`)
+        .addClass("opacity-100")
+        .removeClass("hidden");
+    };
+
+    var hideChatHistory = function () {
+      // Don't hide if hovering
+      if (is_hovering) {
+        return;
+      }
+
+      $("#chat-history")
+        .addClass(`transition-opacity duration-[${CHAT_HISTORY_HIDE_ANIMATION_DURATION}ms] ease-in-out`)
+        .removeClass("opacity-100")
+        .addClass("opacity-0");
+
+      // Wait for the transition to complete before hiding the element
+      transition_hide_timeout_handler = setTimeout(function () {
+        // Check again if hovering before actually hiding
+        if (!is_hovering) {
           $("#chat-history").addClass("hidden");
-        }, CHAT_HISTORY_HIDE_ANIMATION_DURATION); // 1000ms matches the transition duration
-      };
+        }
+      }, CHAT_HISTORY_HIDE_ANIMATION_DURATION); // 1000ms matches the transition duration
+    };
 
-      var sendMessage = function() {
-        // add the user message to the chat history
-        let user_message = $("#chat-input").val();
-        $("#chat-history").append(`
+    var sendMessage = function () {
+      // add the user message to the chat history
+      let user_message = $("#chat-input").val();
+      $("#chat-history").append(`
 <div class="flex flex-col items-end">
   <p class="text-white font-medium">User</p>
   <p class="text-white font-light whitespace-pre-wrap">${user_message}</p>
 </div>`);
-        // clear the chat input
-        $("#chat-input").val("");
-        autoResizeTextarea($("#chat-input")[0]);
+      // clear the chat input
+      $("#chat-input").val("");
+      autoResizeTextarea($("#chat-input")[0]);
 
-        showChatHistory();
+      showChatHistory();
 
-        // let response = "Hello, good morning!\nwhat is on the agenda for today?\nI have a meeting with the team at 10:00 AM.";
-        let response = user_message;
-        textToSpeech(response);
+      let trimmed_word = user_message.toLowerCase().trim().replace(/[^\w\s]/g, "").replace(/\s+/g, " ");
+      let reply = "";
+      for (let message_entry of REPLY_LUT) {
+        for (let trigger_word of message_entry[0]) {
 
-        // add the agent message to the chat history
-        $("#chat-history").append(`
+          if (trimmed_word === trigger_word) {
+            reply = selectRandom(message_entry[1]);
+            break;
+          }
+        }
+      }
+      console.log(`${trimmed_word} -> ${reply}`);
+      if (reply == "") {
+        reply = selectRandom([
+          "I'm sorry, I don't understand what you are asking for.",
+          "Sorry, I didn't quite get that.",
+          "I'm afraid I don't understand your request.",
+          "Hmm, I'm not sure what you mean.",
+          "Sorry, could you rephrase that for me?",
+          "I didn't catch that — can you try saying it another way?",
+          "Apologies, I'm not certain what you're asking.",
+          "I'm not sure I follow. Can you clarify?",
+          "Sorry, I didn't get what you meant there.",
+          "I'm having trouble understanding your message.",
+          "My apologies, that didn't make sense to me.",
+          "I might've missed something — what do you mean?",
+          "I'm not sure what you're referring to.",
+          "Hmm, that doesn't compute for me. Can you explain more?",
+          "I don't fully understand. Could you elaborate?",
+          "Sorry, that went over my head. Mind rephrasing?",
+          "I'm a bit confused. Can you restate that?",
+          "I'm not sure how to respond to that.",
+          "Pardon me, but I don't understand.",
+          "I'm having trouble parsing that request.",
+          "That one's a bit unclear — can you clarify?",
+          "Apologies, I didn't quite follow.",
+          "Hmm, I don't seem to recognize that input.",
+          "Could you please put that another way?",
+          "Sorry, I'm not sure what you're trying to say.",
+          "I'm not following — could you explain a bit more?",
+          "I'm sorry, I didn't understand that message.",
+          "That doesn't make sense to me right now.",
+          "I'm not sure I can interpret that correctly.",
+          "Sorry, I don't know what that means.",
+          "Can you give me a bit more detail?",
+          "Hmm, I'm not getting your meaning there.",
+          "I don't understand that input, sorry.",
+          "Sorry, that's unclear to me.",
+          "Could you be more specific?",
+          "Apologies, I can't make sense of that.",
+          "I might need a bit more context.",
+          "Hmm, I don't think I understand that yet.",
+          "I didn't quite follow — could you clarify?",
+          "Sorry, I don't seem to understand that.",
+          "Can you simplify that for me?",
+          "That didn't register — can you restate?",
+          "My apologies, I can't process that request.",
+          "I didn't get that, could you say it differently?",
+          "Sorry, I'm not sure what you're asking me to do.",
+          "I'm sorry, that's not clear enough for me.",
+          "I couldn't make sense of that message.",
+          "Sorry, I'm a little confused by that one.",
+          "Hmm, I might need more information to understand.",
+          "That doesn't quite make sense to me, sorry.",
+          "I'm not sure what you mean by that.",
+          "Sorry, I can't interpret that properly.",
+          "Apologies, I don't follow your request.",
+          "Hmm, that doesn't sound familiar to me.",
+          "Sorry, I don't recognize that input.",
+          "I'm afraid I can't understand that yet.",
+          "Could you clarify what you're asking for?",
+          "I'm sorry, I didn't quite get your question.",
+          "Hmm, that was unclear — can you reword it?",
+          "Apologies, I don't seem to understand your message.",
+          "I'm having a hard time interpreting that.",
+          "Sorry, I didn't understand the last part.",
+          "I'm not sure I understood that correctly.",
+          "Can you please rephrase your message?",
+          "That's confusing to me — can you explain a bit more?",
+          "I'm not sure I know what you're asking about.",
+          "Sorry, I don't think I can interpret that properly.",
+          "Hmm, I didn't get what you meant by that.",
+          "Apologies, I'm not understanding that right now.",
+          "I'm not sure how to interpret your message.",
+          "Sorry, I can't seem to grasp your meaning.",
+          "Could you provide more details?",
+          "That one lost me — can you try again?",
+          "Sorry, I'm not following your request.",
+          "I'm having trouble understanding that input.",
+          "Apologies, that doesn't make sense to me right now.",
+          "I don't understand — can you try rephrasing?",
+          "Hmm, that one's unclear — could you explain?",
+          "Sorry, that question doesn't make sense to me.",
+          "I'm afraid I can't make sense of what you said.",
+          "I'm not certain what that means — can you elaborate?",
+          "Sorry, I don't quite follow what you're saying.",
+          "I didn't quite understand that — could you try again?",
+          "I'm sorry, I'm having trouble understanding that.",
+          "That doesn't seem clear to me.",
+          "Could you please clarify that statement?",
+          "I'm not sure what that means in this context.",
+          "Apologies, that input confused me.",
+          "Sorry, your message wasn't clear to me.",
+          "I don't fully understand that message.",
+          "Hmm, that's puzzling — can you explain more?",
+          "I'm not sure what you're trying to tell me.",
+          "Sorry, I'm a bit lost on that one.",
+          "Can you provide more context?",
+          "I don't get it — can you rephrase that?",
+          "Sorry, I didn't quite interpret that properly."
+        ]);
+      }
+
+      textToSpeech(reply);
+
+      // add the agent message to the chat history
+      $("#chat-history").append(`
 <div class="flex flex-col items-start">
   <p class="text-white font-medium">Agent</p>
   <p class="text-white font-light" id="agent-message-${message_count}"></p>
 </div>`);
 
-        typeWrite($(`#agent-message-${message_count}`)[0], response, 70);
+      typeWrite($(`#agent-message-${message_count}`)[0], reply, 70, function () {
+        hide_timeout_handler = setTimeout(function () {
+          hideChatHistory();
+        }, CHAT_HISTORY_HIDE_TIMEOUT);
+      });
 
-        message_count += 1;
+      message_count += 1;
 
-        // set the chat history scrollbar to the bottom (latest)
-        $("#chat-history").scrollTop($("#chat-history")[0].scrollHeight);
-      };
+      // set the chat history scrollbar to the bottom (latest)
+      $("#chat-history").scrollTop($("#chat-history")[0].scrollHeight);
+    };
 
-      // Auto-resize textarea function
-      var autoResizeTextarea = function(textarea) {
-        textarea.style.height = "auto";
-        textarea.style.height = textarea.scrollHeight + "px";  // 64px = h-16
-      }
+    // Auto-resize textarea function
+    var autoResizeTextarea = function (textarea) {
+      textarea.style.height = "auto";
+      textarea.style.height = textarea.scrollHeight + "px";  // 64px = h-16
+    }
 
-      $(document).ready(function() {
-        autoResizeTextarea($("#chat-input")[0]);
+    $(document).ready(function () {
+      autoResizeTextarea($("#chat-input")[0]);
 
-        // Auto-resize textarea on input
-        $("#chat-input").on("input", function() {
-          autoResizeTextarea(this);
-        });
+      // Auto-resize textarea on input
+      $("#chat-input").on("input", function () {
+        autoResizeTextarea(this);
+      });
 
-        // Auto-resize on paste
-        $("#chat-input").on("paste", function() {
-          var self = this;
-          setTimeout(function() {
-            autoResizeTextarea(self);
-          }, 0);
-        });
+      // Auto-resize on paste
+      $("#chat-input").on("paste", function () {
+        var self = this;
+        setTimeout(function () {
+          autoResizeTextarea(self);
+        }, 0);
+      });
 
-        $("#chat-input").on("keydown", function(event) {
-          if (event.key === "Enter") {
-            if (event.ctrlKey || event.shiftKey) {
-              // Ctrl+Enter: Create new line
-              event.preventDefault();
-              var textarea = $(this);
-              var start = textarea[0].selectionStart;
-              var end = textarea[0].selectionEnd;
-              var text = textarea.val();
-              textarea.val(text.substring(0, start) + '\n' + text.substring(end));
-              textarea[0].selectionStart = textarea[0].selectionEnd = start + 1;
-              // Trigger auto-resize after newline is inserted
-              autoResizeTextarea(textarea[0]);
-              return;
-            }
+      // Handle hover events for chat history
+      $("#chat-history").on("mouseenter", function () {
+        is_hovering = true;
+        // Clear any existing timers when hovering
+        showChatHistory();
+      });
 
-            // Enter: Send message
-            event.preventDefault();
-            if ($("#chat-input").val().trim() !== "") {
-              sendMessage();
-            }
-          }
+      $("#chat-history").on("mouseleave", function () {
+        is_hovering = false;
+        // Start the hide timer when mouse leaves
+        hide_timeout_handler = setTimeout(function () {
+          hideChatHistory();
+        }, CHAT_HISTORY_HIDE_TIMEOUT);
+      });
+
+      $(".chat-recommendation-button").on("click", function () {
+        let button = $(this);
+        let message = button.text().toLowerCase().trim();
+        switch (message) {
+          case "surprise me":
+            message = "Surprise me.";
+            break;
+          case "who are you":
+            message = selectRandom(REPLY_LUT[1][0]) + "?";
+            break;
+          case "music recs":
+            message = "Recommend some music that -T.K.- likes.";
+            break;
+          case "feel the agi":
+            message = "Let me feel the AGI!";
+            break;
+          case "❤ lvl 10":
+            message = "LVL 10";
+            break;
+        }
+        typeWrite($("#chat-input")[0], message, 10, function () {
+          autoResizeTextarea($("#chat-input")[0]);
+          setTimeout(function () {
+            sendMessage(message);
+          }, 200);
         });
       });
-    </script>
-  </head>
-  <body class="overflow-hidden h-dvh bg-zinc-900 text-white overflow-hidden">
-    <div class="absolute left-5 right-5 md:left-20 md:right-20 bottom-10 z-10 flex flex-col">
-      <div class="w-full md:w-3/5 mx-auto rounded-3xl bg-zinc-950/50 backdrop-blur-md p-4 mb-4 hidden" id="chat-history">
-        <!-- Chat history goes here -->
-      </div>
-      <textarea
-        class="w-full md:w-5/6 mx-auto p-5 pt-4
-          rounded-3xl border-2 border-zinc-500/10 bg-white/5 backdrop-blur-md text-white
-          resize-none overflow-hidden focus:outline-none focus:ring-0"
-        rows="1"
-        placeholder="What can I help you with?" id="chat-input"></textarea>
-    </div>
 
-    <!-- Set the iframe height larger than the viewport to hide the viser animation control bar -->
-    <iframe class="absolute w-full h-[110%]" src="/viser-client/?playbackPath=/recordings/recording.viser&initialCameraPosition=1.0,0.0,0.0&initialCameraLookAt=0.0,0.0,0.0"></iframe>
-  </body>
+      $("#chat-input").on("keydown", function (event) {
+        if (event.key === "Enter") {
+          if (event.ctrlKey || event.shiftKey) {
+            // Ctrl+Enter: Create new line
+            event.preventDefault();
+            var textarea = $(this);
+            var start = textarea[0].selectionStart;
+            var end = textarea[0].selectionEnd;
+            var text = textarea.val();
+            textarea.val(text.substring(0, start) + '\n' + text.substring(end));
+            textarea[0].selectionStart = textarea[0].selectionEnd = start + 1;
+            // Trigger auto-resize after newline is inserted
+            autoResizeTextarea(textarea[0]);
+            return;
+          }
+
+          // Enter: Send message
+          event.preventDefault();
+          if ($("#chat-input").val().trim() !== "") {
+            sendMessage();
+          }
+        }
+      });
+    });
+  </script>
+</head>
+
+<body class="overflow-hidden h-dvh bg-zinc-900 text-white overflow-hidden">
+  <div class="absolute left-5 right-5 md:left-20 md:right-20 bottom-10 z-10 flex flex-col">
+    <div class="w-full md:w-3/5 mx-auto rounded-3xl bg-zinc-950/50 backdrop-blur-md p-4 mb-4 hidden" id="chat-history">
+      <!-- Chat history goes here -->
+    </div>
+    <div class="w-full md:w-5/6 mx-auto flex flex-nowrap overflow-x-auto gap-3 mb-3">
+      <button
+        class="shrink-0 rounded-3xl border-2 border-zinc-500/10 bg-white/5 backdrop-blur-md text-white px-4 py-1
+            transition-transform duration-100 ease-in-out hover:scale-95 chat-recommendation-button focus:outline-none focus:ring-0">
+        Surprise Me
+      </button>
+      <button
+        class="shrink-0 rounded-3xl border-2 border-zinc-500/10 bg-white/5 backdrop-blur-md text-white px-4 py-1
+            transition-transform duration-100 ease-in-out hover:scale-95 chat-recommendation-button focus:outline-none focus:ring-0">
+        Who Are You
+      </button>
+      <button
+        class="shrink-0 rounded-3xl border-2 border-zinc-500/10 bg-white/5 backdrop-blur-md text-white px-4 py-1
+            transition-transform duration-100 ease-in-out hover:scale-95 chat-recommendation-button focus:outline-none focus:ring-0">
+        Music Recs
+      </button>
+      <button
+        class="shrink-0 rounded-3xl border-2 border-zinc-500/10 bg-white/5 backdrop-blur-md text-white px-4 py-1
+            transition-transform duration-100 ease-in-out hover:scale-95 chat-recommendation-button focus:outline-none focus:ring-0">
+        Feel the AGI
+      </button>
+      <button
+        class="shrink-0 rounded-3xl border-2 border-zinc-500/10 bg-white/5 backdrop-blur-md text-white px-4 py-1
+            transition-transform duration-100 ease-in-out hover:scale-95 chat-recommendation-button focus:outline-none focus:ring-0">
+        ❤ LVL 10
+      </button>
+    </div>
+    <textarea class="w-full md:w-5/6 mx-auto p-5 pt-4
+          rounded-3xl border-2 border-zinc-500/10 bg-white/5 backdrop-blur-md text-white
+          resize-none overflow-hidden focus:outline-none focus:ring-0" rows="1" placeholder="What can I help you with?"
+      id="chat-input"></textarea>
+  </div>
+
+  <!-- Set the iframe height larger than the viewport to hide the viser animation control bar -->
+  <iframe class="absolute w-full h-[110%]"
+    src="/viser-client/?playbackPath=/recordings/recording.viser&initialCameraPosition=0.75,0.0,0.9&initialCameraLookAt=0.0,0.0,0.9"></iframe>
+</body>
+
 </html>

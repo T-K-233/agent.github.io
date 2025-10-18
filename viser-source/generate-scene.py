@@ -2,11 +2,10 @@
 python generate-scene.py
 """
 
-import time
 from pathlib import Path
+import time
 
 import numpy as np
-import tyro
 from robot_descriptions.loaders.yourdfpy import load_robot_description
 import imageio.v3 as iio
 
@@ -14,8 +13,7 @@ import viser
 from viser.extras import ViserUrdf
 
 
-def main() -> None:
-
+if __name__ == "__main__":
     server = viser.ViserServer()
 
     server.scene.set_background_image(
@@ -28,18 +26,19 @@ def main() -> None:
         show_logo=False,
     )
 
-    # # Create grid.
-    # server.scene.add_grid(
-    #     "/grid",
-    #     width=2,
-    #     height=2,
-    #     position=(
-    #         0.0,
-    #         0.0,
-    #         0.0,
-    #     ),
-    # )
+    # Create grid.
+    server.scene.add_grid(
+        "/grid",
+        width=2,
+        height=2,
+        position=(
+            0.0,
+            0.0,
+            0.0,
+        ),
+    )
 
+    robot_base = server.scene.add_frame("/robot", show_axes=False)
     urdf = load_robot_description(
         "g1_description",
         load_meshes=True,
@@ -50,9 +49,17 @@ def main() -> None:
     viser_urdf = ViserUrdf(
         server,
         urdf_or_path=urdf,
-        load_meshes=True,
-        load_collision_meshes=False,
+        root_node_name="/robot",
     )
+
+    motion_file = "viser-source/idle.npz"
+    motion_data = np.load(motion_file, allow_pickle=True)
+    fps = int(motion_data["fps"])
+    num_frames = motion_data["dof_positions"].shape[0]
+    frame_duration = 1.0 / float(fps)
+
+    # HACK: Move the robot base rightward a bit
+    base_offset = np.array([0.0, 0.1, 0.0], dtype=np.float32)
 
     joint_positions = np.zeros(urdf.num_actuated_joints, dtype=np.float32)
     # for joint_name, (
@@ -65,37 +72,33 @@ def main() -> None:
     #     initial_config.append(initial_pos)
 
     # Set initial robot configuration.
+    joint_positions[:] = motion_data["dof_positions"][0]
+    robot_base.position = motion_data["body_positions"][0, 0, :] + base_offset
+    robot_base.wxyz = motion_data["body_rotations"][0, 0, :]
     viser_urdf.update_cfg(joint_positions)
 
-    frame_count = 0
-        
     # Create serializer.
     serializer = server.get_scene_serializer()
 
-    num_frames = 100
-
-    for t in range(num_frames):
-        # config[0] += np.sin(frame_count * 0.1)
-
+    for frame_index in range(15, num_frames):
+        joint_positions[:] = motion_data["dof_positions"][frame_index]
+        robot_base.position = motion_data["body_positions"][frame_index, 0, :] + base_offset
+        robot_base.wxyz = motion_data["body_rotations"][frame_index, 0, :]
         viser_urdf.update_cfg(joint_positions)
-        # Add a frame delay.
-        serializer.insert_sleep(0.02)
+        serializer.insert_sleep(frame_duration)
 
-        frame_count += 1
-
-    print(f"Saved {num_frames} frames")
-
-    # Save the complete animation.
-    data = serializer.serialize()  # Returns bytes
+    data = serializer.serialize()
     Path("recordings/recording.viser").write_bytes(data)
-
     print(f"Saved {num_frames} frames")
 
-    # Sleep forever.
+    frame_index = 0
     while True:
+        joint_positions[:] = motion_data["dof_positions"][frame_index]
+        robot_base.position = motion_data["body_positions"][frame_index, 0, :] + base_offset
+        robot_base.wxyz = motion_data["body_rotations"][frame_index, 0, :]
+        print(f"frame_index: {frame_index}, position: {robot_base.position}")
         viser_urdf.update_cfg(joint_positions)
-        time.sleep(0.02)
 
+        frame_index = (frame_index + 1) % num_frames
+        time.sleep(0.01)
 
-if __name__ == "__main__":
-    tyro.cli(main)
